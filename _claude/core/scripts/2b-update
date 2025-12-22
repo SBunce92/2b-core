@@ -37,41 +37,21 @@ fi
 echo ""
 echo "=== Changes ==="
 
-# Sync entire _claude/core/ directory
+# Directories to sync from 2b-core (the "meta layer")
+SYNC_DIRS=(
+    "_claude/core"
+    "_claude/hooks"
+    "projects/_template"
+)
+
 UPDATED=()
 ADDED=()
 
-# Find all files in 2b-core's _claude/core/
-while IFS= read -r -d '' src; do
-    rel_path="${src#$TMP_DIR/}"
-    dst="$VAULT_DIR/$rel_path"
+# Helper function to sync a directory
+sync_dir() {
+    local src_dir="$1"
+    [[ -d "$TMP_DIR/$src_dir" ]] || return 0
 
-    # Ensure destination directory exists
-    mkdir -p "$(dirname "$dst")"
-
-    if [[ -f "$dst" ]]; then
-        if ! diff -q "$src" "$dst" > /dev/null 2>&1; then
-            echo ""
-            echo "--- $rel_path ---"
-            diff -u "$dst" "$src" || true
-            UPDATED+=("$rel_path")
-            if [[ "$DRY_RUN" == false ]]; then
-                cp "$src" "$dst"
-                chmod +x "$dst" 2>/dev/null || true
-            fi
-        fi
-    else
-        echo "NEW: $rel_path"
-        ADDED+=("$rel_path")
-        if [[ "$DRY_RUN" == false ]]; then
-            cp "$src" "$dst"
-            chmod +x "$dst" 2>/dev/null || true
-        fi
-    fi
-done < <(find "$TMP_DIR/_claude/core" -type f -print0 2>/dev/null)
-
-# Also sync projects/_template/ if it exists
-if [[ -d "$TMP_DIR/projects/_template" ]]; then
     while IFS= read -r -d '' src; do
         rel_path="${src#$TMP_DIR/}"
         dst="$VAULT_DIR/$rel_path"
@@ -85,6 +65,7 @@ if [[ -d "$TMP_DIR/projects/_template" ]]; then
                 UPDATED+=("$rel_path")
                 if [[ "$DRY_RUN" == false ]]; then
                     cp "$src" "$dst"
+                    chmod +x "$dst" 2>/dev/null || true
                 fi
             fi
         else
@@ -92,9 +73,32 @@ if [[ -d "$TMP_DIR/projects/_template" ]]; then
             ADDED+=("$rel_path")
             if [[ "$DRY_RUN" == false ]]; then
                 cp "$src" "$dst"
+                chmod +x "$dst" 2>/dev/null || true
             fi
         fi
-    done < <(find "$TMP_DIR/projects/_template" -type f -print0 2>/dev/null)
+    done < <(find "$TMP_DIR/$src_dir" -type f -print0 2>/dev/null)
+}
+
+# Sync all meta layer directories
+for dir in "${SYNC_DIRS[@]}"; do
+    sync_dir "$dir"
+done
+
+# Also sync CLAUDE.md if it exists (AI instructions template)
+if [[ -f "$TMP_DIR/CLAUDE.md" ]]; then
+    if [[ -f "$VAULT_DIR/CLAUDE.md" ]]; then
+        if ! diff -q "$TMP_DIR/CLAUDE.md" "$VAULT_DIR/CLAUDE.md" > /dev/null 2>&1; then
+            echo ""
+            echo "--- CLAUDE.md ---"
+            echo "(skipped - vault has local customizations)"
+        fi
+    else
+        echo "NEW: CLAUDE.md"
+        ADDED+=("CLAUDE.md")
+        if [[ "$DRY_RUN" == false ]]; then
+            cp "$TMP_DIR/CLAUDE.md" "$VAULT_DIR/CLAUDE.md"
+        fi
+    fi
 fi
 
 # Update version
