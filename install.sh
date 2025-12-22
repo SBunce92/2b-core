@@ -67,14 +67,73 @@ create_vault() {
     # Create structure
     mkdir -p "$VAULT_PATH"
     cd "$VAULT_PATH"
-    mkdir -p _claude/core _claude/local _state log projects/_template _export
+    mkdir -p _claude/core _claude/hooks _claude/local _state log projects/_template _export
 
     # Copy core files
     cp -r "$tmp/_claude/core/"* _claude/core/
+    cp -r "$tmp/_claude/hooks/"* _claude/hooks/ 2>/dev/null || true
     cp "$tmp/projects/_template/"* projects/_template/ 2>/dev/null || true
 
     # Make scripts executable
     chmod +x _claude/core/scripts/* 2>/dev/null || true
+    chmod +x _claude/hooks/* 2>/dev/null || true
+
+    # Create settings with hooks enabled
+    cat > _claude/settings.local.json << 'SETTINGS_EOF'
+{
+  "statusLine": {
+    "type": "command",
+    "command": "\"$CLAUDE_PROJECT_DIR\"/_claude/core/scripts/statusline.sh"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git log:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(mkdir:*)",
+      "Bash(ls:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/_claude/hooks/session-start.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/_claude/hooks/user-prompt-submit.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/_claude/hooks/stop.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
+SETTINGS_EOF
 
     # Create CLAUDE.md
     cp "$tmp/CLAUDE.md" ./CLAUDE.md

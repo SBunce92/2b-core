@@ -1,14 +1,12 @@
 #!/bin/bash
-# Stop Hook: Auto-capture significant exchanges to log
-# Deterministic - doesn't rely on Claude to act
+# Stop Hook: Queue significant exchanges for AI summarization
+# Queues to pending file - processed by 'cc --digest' or next session
 
 VAULT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-LOG_DIR="$VAULT_DIR/log"
-WEEK=$(date +%Y-W%V)
-LOG_FILE="$LOG_DIR/$WEEK.md"
+PENDING_FILE="$VAULT_DIR/_state/pending-captures.jsonl"
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M")
 
-# Read hook input (JSON with conversation data)
+# Read hook input
 INPUT=$(cat)
 
 # Extract last assistant message
@@ -24,37 +22,23 @@ HAS_CODE=$(echo "$LAST_RESPONSE" | grep -c '```' || echo 0)
 HAS_DECISION=$(echo "$LAST_RESPONSE" | grep -ciE '(decided|decision|will |agreed|conclusion|recommend)' || echo 0)
 WORD_COUNT=$(echo "$LAST_RESPONSE" | wc -w | tr -d ' ')
 
-# Capture if significant
+# Queue if significant
 if [ "$HAS_CODE" -gt 0 ] || [ "$HAS_DECISION" -gt 0 ] || [ "$WORD_COUNT" -gt 500 ]; then
-    # Get user's question for context
     LAST_USER=$(echo "$INPUT" | jq -r '.messages[-2].content // ""' 2>/dev/null)
 
-    # Truncate user message if too long
-    if [ ${#LAST_USER} -gt 300 ]; then
-        LAST_USER="${LAST_USER:0:300}..."
-    fi
+    # Truncate for queue (full content too large)
+    LAST_USER=$(echo "$LAST_USER" | head -c 500)
+    LAST_RESPONSE=$(echo "$LAST_RESPONSE" | head -c 3000)
 
-    # Truncate response if extremely long (>5000 chars)
-    if [ ${#LAST_RESPONSE} -gt 5000 ]; then
-        LAST_RESPONSE="${LAST_RESPONSE:0:5000}
+    mkdir -p "$(dirname "$PENDING_FILE")"
 
-[... truncated, ${#LAST_RESPONSE} chars total ...]"
-    fi
+    # Append to pending queue as JSON line
+    jq -n --arg ts "$TIMESTAMP" \
+          --arg user "$LAST_USER" \
+          --arg response "$LAST_RESPONSE" \
+          --arg trigger "$([ "$HAS_CODE" -gt 0 ] && echo "code ")$([ "$HAS_DECISION" -gt 0 ] && echo "decision ")$([ "$WORD_COUNT" -gt 500 ] && echo "long")" \
+          '{timestamp: $ts, user: $user, response: $response, trigger: $trigger}' >> "$PENDING_FILE"
 
-    mkdir -p "$LOG_DIR"
-
-    # Append full exchange to log
-    cat >> "$LOG_FILE" << CAPTURE_EOF
-
-## $TIMESTAMP | Auto-Capture
-
-**User:** $LAST_USER
-
-**Response:**
-$LAST_RESPONSE
-
----
-CAPTURE_EOF
-
-    echo "[Captured to $WEEK.md]"
+    PENDING_COUNT=$(wc -l < "$PENDING_FILE" 2>/dev/null | tr -d ' ')
+    echo "[Queued for digest - $PENDING_COUNT pending]"
 fi
