@@ -14,19 +14,23 @@ Core system files for a log-based second brain, optimized for AI-first workflows
 1. Create vault directory with this structure:
 ```
 vault/
-├── CLAUDE.md          # Copy from this repo
+├── CLAUDE.md              # Copy from this repo (customize for your vault)
 ├── _claude/
-│   ├── agents.json    # Agent definitions
-│   └── scripts/
-│       └── vaultrc    # Shell helpers
+│   ├── core/              # FROM 2b-core - managed by /update-2b
+│   │   ├── agents.json
+│   │   └── scripts/vaultrc
+│   ├── local/             # Your customizations (never touched by update)
+│   ├── skills/            # Skill definitions
+│   │   └── update-2b.md
+│   └── .2b-core-version   # Tracks installed version
 ├── _state/
-│   └── entities.json  # Entity index (will be created)
+│   └── entities.json      # Entity index (will be created)
 ├── log/
-│   └── YYYY-WXX.md    # Weekly logs
+│   └── YYYY-WXX.md        # Weekly logs
 ├── projects/
 │   └── _template/
-│       └── CONTEXT.md # Project template
-└── _export/           # Shareable artifacts (gitignored)
+│       └── CONTEXT.md     # Project template
+└── _export/               # Shareable artifacts (gitignored)
 ```
 
 2. Add to `.gitignore`:
@@ -38,8 +42,15 @@ _export/
 
 3. Source shell helpers:
 ```bash
-source /path/to/vault/_claude/scripts/vaultrc
+source /path/to/vault/_claude/core/scripts/vaultrc
 ```
+
+## Updating
+
+Run `/update-2b` in Claude Code to pull latest system files:
+- `_claude/core/*` files are auto-updated (safe to overwrite)
+- `_claude/local/*` files are never touched
+- `CLAUDE.md` changes require manual approval
 
 ## Usage
 
@@ -52,13 +63,13 @@ After conversations, the capture agent:
 ### Lookup
 ```bash
 # Get all refs for an entity
-vref "Strike-PnL"
+vref "Project-Name"
 
 # Extract content from a ref
 vextract "log/2025-W52.md:75:131"
 
 # Get full context for an entity
-vcontext "Strike-PnL"
+vcontext "Project-Name"
 ```
 
 ### Quick capture
