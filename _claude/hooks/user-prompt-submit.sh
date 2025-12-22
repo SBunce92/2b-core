@@ -34,7 +34,7 @@ Pending captures to process:
 EOF
 
 # Output captures
-echo "$CAPTURES" | jq -r '.[] | "---\nTimestamp: \(.timestamp)\nTrigger: \(.trigger)\nUser: \(.user)\nResponse: \(.response[0:1500])...\n"'
+echo "$CAPTURES" | jq -r '.[] | "---\nTimestamp: \(.timestamp)\nUser: \(.user)\nResponse: \(.response[0:1500])...\n"'
 
 cat << 'EOF'
 
