@@ -12,21 +12,21 @@ Current schema has:
 ```json
 {
   "entities": {
-    "Strike-PnL": {
+    "Project-Alpha": {
       "type": "project",
       "refs": ["log/2025-W52.md:75:131", ...],
-      "status": "staging-ready"
+      "status": "active"
     },
-    "Felix Poirier": {
+    "Jane Smith": {
       "type": "person",
       "refs": ["log/2025-W52.md:75:131", ...],
-      "role": "direct-report",
-      "org": "TA-Team"
+      "role": "engineer",
+      "org": "Engineering"
     }
   },
   "_meta": {
     "last_updated": "2025-12-22",
-    "total_lines": 42764
+    "total_lines": 1500
   }
 }
 ```
@@ -46,12 +46,12 @@ Each entity declares its type:
 ### 3. Relationships are implicit via shared refs
 If two entities share a ref, they're related:
 ```
-Strike-PnL.refs    = ["log/2025-W52.md:75:131", ...]
-Felix Poirier.refs = ["log/2025-W52.md:75:131", ...]
+Project-Alpha.refs = ["log/2025-W52.md:75:131", ...]
+Jane Smith.refs    = ["log/2025-W52.md:75:131", ...]
 ```
 Both reference lines 75-131 = mentioned together = related.
 
-No explicit `team` arrays needed. Query: "who works on Strike-PnL?" = find all person entities with overlapping refs.
+No explicit `team` arrays needed. Query: "who works on Project-Alpha?" = find all person entities with overlapping refs.
 
 ### 4. Attributes by type
 Projects have: `status`, `repo`, `summary`
@@ -63,7 +63,7 @@ People have: `role`, `org`, `location`, `title`
 2. **Always accurate** - refs come from logs, single source of truth
 3. **Extensible** - add new entity types without schema changes
 4. **Simpler agents** - one loop over entities, not separate project/people handling
-5. **Better queries** - "what is Felix working on?" = find entities with shared refs
+5. **Better queries** - "what is Jane working on?" = find entities with shared refs
 
 ## Migration
 
@@ -72,14 +72,14 @@ People have: `role`, `org`, `location`, `title`
 3. Remove `team` arrays from projects
 4. Keep person attributes (`role`, `org`, etc.)
 
-## Example Query: "Who works on Strike-PnL?"
+## Example Query: "Who works on Project-Alpha?"
 
 ```javascript
-const strikePnL = entities["Strike-PnL"];
+const project = entities["Project-Alpha"];
 const relatedPeople = Object.entries(entities)
   .filter(([name, e]) =>
     e.type === "person" &&
-    e.refs.some(ref => strikePnL.refs.includes(ref))
+    e.refs.some(ref => project.refs.includes(ref))
   )
   .map(([name]) => name);
 ```
@@ -88,7 +88,7 @@ const relatedPeople = Object.entries(entities)
 
 ```json
 {
-  "ClickHouse": {
+  "PostgreSQL": {
     "type": "tool",
     "refs": [...],
     "category": "database"
