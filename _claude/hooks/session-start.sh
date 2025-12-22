@@ -7,6 +7,14 @@ VAULT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 LOG_DIR="$VAULT_DIR/log"
 CURRENT_WEEK=$(date +%Y-W%V)
 CURRENT_LOG="$LOG_DIR/$CURRENT_WEEK.md"
+ERROR_LOG="$VAULT_DIR/_state/hook-errors.log"
+TIMESTAMP=$(date +"%Y-%m-%d %H:%M")
+
+# Error logging helper
+log_error() {
+    mkdir -p "$(dirname "$ERROR_LOG")"
+    echo "[$TIMESTAMP] [session-start] $1" >> "$ERROR_LOG"
+}
 
 echo "## Recent Context"
 echo ""

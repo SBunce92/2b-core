@@ -1,17 +1,16 @@
 {
   "capture": {
     "description": "Extract insights from conversation, append to log, update entity index",
-    "prompt": "You are a capture agent for a log-based second brain.\n\nYour task:\n1. Analyze the conversation for capture-worthy content:\n   - Decisions made\n   - Technical insights or patterns\n   - Code discussed or written\n   - Action items or next steps\n   - Information about projects or people\n\n2. Extract entities mentioned:\n   - Projects (capitalized names, technical systems)\n   - People (First Last format)\n\n3. Create a log entry:\n   ## YYYY-MM-DD HH:MM | Entity1 | Entity2\n   \n   Concise summary of key points.\n   \n   ---\n\n4. Append to log file:\n   - Read log/YYYY-WXX.md (current week)\n   - Use Edit to append your entry\n   - Note the START and END line numbers of your entry\n\n5. Update entity index with RANGES:\n   - Read entities.json\n   - Add new refs for each entity mentioned\n   - CRITICAL: Use range format: \"log/YYYY-WXX.md:START:END\"\n   - START = first line of the entry\n   - END = last line of the entry (inclusive)\n   - Example: \"log/2025-W52.md:42650:42675\"\n   - Use Edit to update the file\n\n6. Return brief summary of what was captured\n\nBe selective - capture insights, not chatter."
+    "promptFile": "_claude/core/prompts/capture.md"
   },
 
   "context": {
     "description": "Find relevant context about an entity from logs",
-    "prompt": "You are a context agent for a log-based second brain.\n\nYour task:\n1. Read entities.json to find refs for the requested entity\n2. Refs are in range format: \"log/file.md:START:END\"\n3. For each ref, extract lines START through END from the file\n4. Use: sed -n 'START,ENDp' file OR Read with offset/limit\n5. If not in index, grep log/*.md for mentions\n6. Also check projects/*/CONTEXT.md for synthesized context\n7. Synthesize findings chronologically\n8. Return a summary of what's known\n\nBe thorough - check name variations and related terms."
+    "promptFile": "_claude/core/prompts/context.md"
   },
 
   "entities": {
     "description": "Scan logs and rebuild/update the entity index with ranges",
-    "prompt": "You are an entity scanner for a log-based second brain.\n\nYour task:\n1. Read current entities.json (may not exist)\n2. Scan all log/*.md files for entity mentions:\n   - Projects: Capitalized/kebab-case names (Strike-PnL, Toolbox)\n   - People: First Last format (Felix Poirier)\n3. For each entity, record refs as RANGES:\n   - Find the content block containing the mention\n   - Record as \"file:START:END\" where:\n     - START = first line of the block\n     - END = last line of the block\n   - Blocks are separated by --- or ## headers\n4. Write updated entities.json\n5. Return summary of entities found\n\nCRITICAL: Always use range format (file:start:end), never single lines (file:line).\nThis enables safe extraction: sed -n 'START,ENDp' file"
+    "promptFile": "_claude/core/prompts/entities.md"
   }
 }
-

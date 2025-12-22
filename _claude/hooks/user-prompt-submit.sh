@@ -5,6 +5,14 @@
 VAULT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 PENDING_FILE="$VAULT_DIR/_state/pending-captures.jsonl"
 PROCESSING_FILE="$VAULT_DIR/_state/processing-captures.jsonl"
+ERROR_LOG="$VAULT_DIR/_state/hook-errors.log"
+TIMESTAMP=$(date +"%Y-%m-%d %H:%M")
+
+# Error logging helper
+log_error() {
+    mkdir -p "$(dirname "$ERROR_LOG")"
+    echo "[$TIMESTAMP] [user-prompt-submit] $1" >> "$ERROR_LOG"
+}
 
 # Check if pending captures exist
 if [ ! -f "$PENDING_FILE" ] || [ ! -s "$PENDING_FILE" ]; then
