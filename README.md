@@ -1,6 +1,23 @@
 # 2b-core
 
-Core system files for a log-based second brain, optimized for AI-first workflows.
+AI-first second brain. Log-based capture with Claude Code.
+
+## Quick Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SBunce92/2b-core/main/install.sh | bash
+```
+
+Custom location:
+```bash
+VAULT_PATH=~/my-vault curl -fsSL https://raw.githubusercontent.com/SBunce92/2b-core/main/install.sh | bash
+```
+
+After install:
+```bash
+source ~/.zshrc
+cc              # Start Claude in vault
+```
 
 ## Philosophy
 
@@ -9,78 +26,79 @@ Core system files for a log-based second brain, optimized for AI-first workflows
 - **Ranges not lines**: Refs use `file:start:end` for safe extraction
 - **AI-maintained**: Capture agents extract insights, update index
 
-## Setup
+## Structure
 
-1. Create vault directory with this structure:
 ```
 vault/
-├── CLAUDE.md              # Copy from this repo (customize for your vault)
+├── CLAUDE.md              # AI instructions for this vault
 ├── _claude/
-│   ├── core/              # FROM 2b-core - managed by /update-2b
-│   │   ├── agents.json
-│   │   └── scripts/vaultrc
-│   ├── local/             # Your customizations (never touched by update)
-│   ├── skills/            # Skill definitions
-│   │   └── update-2b.md
+│   ├── core/              # System files (managed by cc --update)
+│   │   ├── agents.json    # Agent definitions
+│   │   └── scripts/       # Shell helpers + cc function
+│   ├── local/             # Your customizations (never touched)
 │   └── .2b-core-version   # Tracks installed version
 ├── _state/
-│   └── entities.json      # Entity index (will be created)
+│   └── entities.json      # Entity index with range refs
 ├── log/
-│   └── YYYY-WXX.md        # Weekly logs
-├── projects/
-│   └── _template/
-│       └── CONTEXT.md     # Project template
+│   └── YYYY-WXX.md        # Weekly logs (append-only)
+├── projects/              # Materialized views per project
 └── _export/               # Shareable artifacts (gitignored)
 ```
 
-2. Add to `.gitignore`:
-```
-_export/
-.DS_Store
-.obsidian/
+## Commands
+
+```bash
+cc              # Start Claude Code in vault
+cc --update     # Pull latest 2b-core system files
+cc --resume     # Resume last session
+cc --continue   # Continue last session
+cc --sync       # Git add, commit, push
 ```
 
-3. Source shell helpers:
+## Shell Helpers
+
+After sourcing `cc-function.sh`:
+
 ```bash
-source /path/to/vault/_claude/core/scripts/vaultrc
+vref "Project-Name"              # Get refs for entity
+vextract "log/2025-W52.md:75:131" # Extract content from ref
+vcontext "Project-Name"          # Get all context for entity
+vgrep "pattern"                  # Search logs
+ventities                        # List all entities
+vquick "Quick thought to log"    # Fast capture
+vstat                            # Vault status
 ```
+
+## Agents
+
+Three built-in agents in `_claude/core/agents.json`:
+
+- **capture**: Extract insights → append to log → update entity index
+- **context**: Lookup entity → extract log ranges → synthesize
+- **entities**: Rebuild index from logs with proper ranges
 
 ## Updating
 
-Run the update script to pull latest system files:
 ```bash
-_claude/core/scripts/2b-update          # Apply updates
-_claude/core/scripts/2b-update --dry-run # Preview changes first
+cc --update          # Apply updates
+cc --update --dry-run # Preview changes first
 ```
 
-- `_claude/core/*` files are auto-updated (safe to overwrite)
-- `_claude/local/*` files are never touched
-- Version tracked in `_claude/.2b-core-version`
+Updates sync `_claude/core/*` from this repo. Your `_claude/local/*` is never touched.
 
-## Usage
+## Manual Setup
 
-### Capture
-After conversations, the capture agent:
-1. Extracts decisions, insights, code, action items
-2. Appends to current week's log
-3. Updates entity index with range refs
+If you prefer manual installation:
 
-### Lookup
-```bash
-# Get all refs for an entity
-vref "Project-Name"
-
-# Extract content from a ref
-vextract "log/2025-W52.md:75:131"
-
-# Get full context for an entity
-vcontext "Project-Name"
-```
-
-### Quick capture
-```bash
-vquick "Decided to use range-based refs for safer extraction"
-```
+1. Clone this repo
+2. Copy `_claude/core/` to your vault
+3. Copy `CLAUDE.md` and `projects/_template/`
+4. Create `_state/`, `log/`, `_export/` directories
+5. Add to `.zshrc`:
+   ```bash
+   export VAULT_PATH="$HOME/vault"
+   source "$VAULT_PATH/_claude/core/scripts/cc-function.sh"
+   ```
 
 ## License
 
