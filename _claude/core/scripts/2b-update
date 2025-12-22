@@ -37,20 +37,14 @@ fi
 echo ""
 echo "=== Changes ==="
 
-# Files to update (core/ contents)
-CORE_FILES=(
-    "_claude/core/agents.json"
-    "_claude/core/scripts/vaultrc"
-)
-
+# Sync entire _claude/core/ directory
 UPDATED=()
-for file in "${CORE_FILES[@]}"; do
-    src="$TMP_DIR/$file"
-    dst="$VAULT_DIR/$file"
+ADDED=()
 
-    if [[ ! -f "$src" ]]; then
-        continue
-    fi
+# Find all files in 2b-core's _claude/core/
+while IFS= read -r -d '' src; do
+    rel_path="${src#$TMP_DIR/}"
+    dst="$VAULT_DIR/$rel_path"
 
     # Ensure destination directory exists
     mkdir -p "$(dirname "$dst")"
@@ -58,21 +52,50 @@ for file in "${CORE_FILES[@]}"; do
     if [[ -f "$dst" ]]; then
         if ! diff -q "$src" "$dst" > /dev/null 2>&1; then
             echo ""
-            echo "--- $file ---"
+            echo "--- $rel_path ---"
             diff -u "$dst" "$src" || true
-            UPDATED+=("$file")
+            UPDATED+=("$rel_path")
+            if [[ "$DRY_RUN" == false ]]; then
+                cp "$src" "$dst"
+                chmod +x "$dst" 2>/dev/null || true
+            fi
+        fi
+    else
+        echo "NEW: $rel_path"
+        ADDED+=("$rel_path")
+        if [[ "$DRY_RUN" == false ]]; then
+            cp "$src" "$dst"
+            chmod +x "$dst" 2>/dev/null || true
+        fi
+    fi
+done < <(find "$TMP_DIR/_claude/core" -type f -print0 2>/dev/null)
+
+# Also sync projects/_template/ if it exists
+if [[ -d "$TMP_DIR/projects/_template" ]]; then
+    while IFS= read -r -d '' src; do
+        rel_path="${src#$TMP_DIR/}"
+        dst="$VAULT_DIR/$rel_path"
+        mkdir -p "$(dirname "$dst")"
+
+        if [[ -f "$dst" ]]; then
+            if ! diff -q "$src" "$dst" > /dev/null 2>&1; then
+                echo ""
+                echo "--- $rel_path ---"
+                diff -u "$dst" "$src" || true
+                UPDATED+=("$rel_path")
+                if [[ "$DRY_RUN" == false ]]; then
+                    cp "$src" "$dst"
+                fi
+            fi
+        else
+            echo "NEW: $rel_path"
+            ADDED+=("$rel_path")
             if [[ "$DRY_RUN" == false ]]; then
                 cp "$src" "$dst"
             fi
         fi
-    else
-        echo "NEW: $file"
-        UPDATED+=("$file")
-        if [[ "$DRY_RUN" == false ]]; then
-            cp "$src" "$dst"
-        fi
-    fi
-done
+    done < <(find "$TMP_DIR/projects/_template" -type f -print0 2>/dev/null)
+fi
 
 # Update version
 if [[ "$DRY_RUN" == false ]]; then
@@ -84,13 +107,22 @@ rm -rf "$TMP_DIR"
 
 echo ""
 echo "=== Summary ==="
-if [[ ${#UPDATED[@]} -eq 0 ]]; then
+TOTAL=$((${#UPDATED[@]} + ${#ADDED[@]}))
+if [[ $TOTAL -eq 0 ]]; then
     echo "No file changes (version updated only)"
 else
-    echo "Updated ${#UPDATED[@]} file(s):"
-    for f in "${UPDATED[@]}"; do
-        echo "  - $f"
-    done
+    if [[ ${#UPDATED[@]} -gt 0 ]]; then
+        echo "Updated ${#UPDATED[@]} file(s):"
+        for f in "${UPDATED[@]}"; do
+            echo "  ~ $f"
+        done
+    fi
+    if [[ ${#ADDED[@]} -gt 0 ]]; then
+        echo "Added ${#ADDED[@]} file(s):"
+        for f in "${ADDED[@]}"; do
+            echo "  + $f"
+        done
+    fi
 fi
 
 if [[ "$DRY_RUN" == false ]]; then
