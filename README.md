@@ -47,10 +47,15 @@ source /path/to/vault/_claude/core/scripts/vaultrc
 
 ## Updating
 
-Run `/update-2b` in Claude Code to pull latest system files:
+Run the update script to pull latest system files:
+```bash
+_claude/core/scripts/2b-update          # Apply updates
+_claude/core/scripts/2b-update --dry-run # Preview changes first
+```
+
 - `_claude/core/*` files are auto-updated (safe to overwrite)
 - `_claude/local/*` files are never touched
-- `CLAUDE.md` changes require manual approval
+- Version tracked in `_claude/.2b-core-version`
 
 ## Usage
 

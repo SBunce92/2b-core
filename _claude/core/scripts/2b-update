@@ -1,0 +1,104 @@
+#!/bin/bash
+# Update vault's 2b-core system files from latest
+# Usage: 2b-update [--dry-run]
+
+set -e
+
+VAULT_DIR="${VAULT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
+REPO="git@github.com:SBunce92/2b-core.git"
+TMP_DIR="/tmp/2b-core-update-$$"
+VERSION_FILE="$VAULT_DIR/_claude/.2b-core-version"
+DRY_RUN=false
+
+if [[ "$1" == "--dry-run" ]]; then
+    DRY_RUN=true
+    echo "[DRY RUN MODE]"
+fi
+
+# Current version
+CURRENT_VERSION="none"
+if [[ -f "$VERSION_FILE" ]]; then
+    CURRENT_VERSION=$(cat "$VERSION_FILE")
+fi
+echo "Current version: $CURRENT_VERSION"
+
+# Clone latest
+echo "Fetching latest 2b-core..."
+git clone --depth 1 --quiet "$REPO" "$TMP_DIR"
+NEW_VERSION=$(cd "$TMP_DIR" && git rev-parse --short HEAD)
+echo "Latest version:  $NEW_VERSION"
+
+if [[ "$CURRENT_VERSION" == "$NEW_VERSION" ]]; then
+    echo "Already up to date."
+    rm -rf "$TMP_DIR"
+    exit 0
+fi
+
+echo ""
+echo "=== Changes ==="
+
+# Files to update (core/ contents)
+CORE_FILES=(
+    "_claude/core/agents.json"
+    "_claude/core/scripts/vaultrc"
+)
+
+UPDATED=()
+for file in "${CORE_FILES[@]}"; do
+    src="$TMP_DIR/$file"
+    dst="$VAULT_DIR/$file"
+
+    if [[ ! -f "$src" ]]; then
+        continue
+    fi
+
+    # Ensure destination directory exists
+    mkdir -p "$(dirname "$dst")"
+
+    if [[ -f "$dst" ]]; then
+        if ! diff -q "$src" "$dst" > /dev/null 2>&1; then
+            echo ""
+            echo "--- $file ---"
+            diff -u "$dst" "$src" || true
+            UPDATED+=("$file")
+            if [[ "$DRY_RUN" == false ]]; then
+                cp "$src" "$dst"
+            fi
+        fi
+    else
+        echo "NEW: $file"
+        UPDATED+=("$file")
+        if [[ "$DRY_RUN" == false ]]; then
+            cp "$src" "$dst"
+        fi
+    fi
+done
+
+# Update version
+if [[ "$DRY_RUN" == false ]]; then
+    echo "$NEW_VERSION" > "$VERSION_FILE"
+fi
+
+# Cleanup
+rm -rf "$TMP_DIR"
+
+echo ""
+echo "=== Summary ==="
+if [[ ${#UPDATED[@]} -eq 0 ]]; then
+    echo "No file changes (version updated only)"
+else
+    echo "Updated ${#UPDATED[@]} file(s):"
+    for f in "${UPDATED[@]}"; do
+        echo "  - $f"
+    done
+fi
+
+if [[ "$DRY_RUN" == false ]]; then
+    echo ""
+    echo "Version: $CURRENT_VERSION → $NEW_VERSION"
+    echo ""
+    echo "Run 'git add -A && git commit -m \"Update 2b-core to $NEW_VERSION\"' to commit"
+else
+    echo ""
+    echo "[DRY RUN] No changes made"
+fi

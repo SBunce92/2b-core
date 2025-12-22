@@ -59,7 +59,11 @@ Source `_claude/core/scripts/vaultrc` for:
 
 ## 2b-core Updates
 
-Run `/update-2b` to pull latest system files from github.com/SBunce92/2b-core.
+Run `2b-update` to pull latest system files:
+```bash
+_claude/core/scripts/2b-update          # Apply updates
+_claude/core/scripts/2b-update --dry-run # Preview changes
+```
 - `_claude/core/*` = safe to overwrite
 - `_claude/local/*` = never touched
 - Version tracked in `_claude/.2b-core-version`
