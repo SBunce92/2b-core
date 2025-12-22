@@ -5,12 +5,12 @@ Log-based capture system. Everything flows through `log/`.
 ## Structure
 
 ```
+entities.json  # Entity index with range refs (core artifact)
 log/           # Weekly logs (YYYY-WXX.md) - append-only event store
-_state/        # Entity index (entities.json) - derived, tracked
 _claude/
-  core/        # System files from 2b-core (managed by /update-2b)
+  core/        # System files from 2b-core (managed by cc --update)
   local/       # Vault-specific customizations
-  skills/      # Skill definitions
+  hooks/       # Session hooks
 projects/      # Materialized views per project
 _export/       # Shareable artifacts (gitignored)
 ```
@@ -27,7 +27,7 @@ Extraction: `sed -n 'START,ENDp' file`
 ## Lookup
 
 ```
-Entity index: _state/entities.json
+Entity index: entities.json
 Read index → get refs → extract log entries at those ranges
 ```
 

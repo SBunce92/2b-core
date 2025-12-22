@@ -67,7 +67,7 @@ create_vault() {
     # Create structure
     mkdir -p "$VAULT_PATH"
     cd "$VAULT_PATH"
-    mkdir -p _claude/core _claude/hooks _claude/local _state log projects/_template _export
+    mkdir -p _claude/core _claude/hooks _claude/local log projects/_template _export
 
     # Copy core files
     cp -r "$tmp/_claude/core/"* _claude/core/
@@ -146,7 +146,7 @@ _export/
 EOF
 
     # Create empty entities.json
-    cat > _state/entities.json << 'EOF'
+    cat > entities.json << 'EOF'
 {
   "projects": {},
   "people": {},

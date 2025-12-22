@@ -35,7 +35,7 @@ vref() {
         return 1
     fi
 
-    local index="$VAULT_DIR/_state/entities.json"
+    local index="$VAULT_DIR/entities.json"
     if [ ! -f "$index" ]; then
         echo "Entity index not found: $index"
         return 1
@@ -78,7 +78,7 @@ vgrep() {
 
 # List all entities
 ventities() {
-    local index="$VAULT_DIR/_state/entities.json"
+    local index="$VAULT_DIR/entities.json"
     if [ ! -f "$index" ]; then
         echo "Entity index not found"
         return 1
@@ -124,9 +124,9 @@ vstat() {
         echo "This week: $lines lines"
     fi
 
-    if [ -f "$VAULT_DIR/_state/entities.json" ]; then
-        local projects=$(jq '.projects | length' "$VAULT_DIR/_state/entities.json")
-        local people=$(jq '.people | length' "$VAULT_DIR/_state/entities.json")
+    if [ -f "$VAULT_DIR/entities.json" ]; then
+        local projects=$(jq '.projects | length' "$VAULT_DIR/entities.json")
+        local people=$(jq '.people | length' "$VAULT_DIR/entities.json")
         echo "Entities: $projects projects, $people people"
     fi
 }

@@ -31,14 +31,13 @@ cc              # Start Claude in vault
 ```
 vault/
 ├── CLAUDE.md              # AI instructions for this vault
+├── entities.json          # Entity index with range refs (core artifact)
 ├── _claude/
 │   ├── core/              # System files (managed by cc --update)
 │   │   ├── agents.json    # Agent definitions
 │   │   └── scripts/       # Shell helpers + cc function
 │   ├── local/             # Your customizations (never touched)
 │   └── .2b-core-version   # Tracks installed version
-├── _state/
-│   └── entities.json      # Entity index with range refs
 ├── log/
 │   └── YYYY-WXX.md        # Weekly logs (append-only)
 ├── projects/              # Materialized views per project
