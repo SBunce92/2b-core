@@ -1,0 +1,134 @@
+#!/bin/bash
+# Vault helper functions
+# Source this: source /path/to/vault/_claude/scripts/vaultrc
+
+# Auto-detect vault directory
+if [ -z "$VAULT_DIR" ]; then
+    VAULT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+fi
+
+# Extract content from a ref (file:start:end)
+vextract() {
+    local ref="$1"
+    if [ -z "$ref" ]; then
+        echo "Usage: vextract <file:start:end>"
+        return 1
+    fi
+
+    local file=$(echo "$ref" | cut -d: -f1)
+    local start=$(echo "$ref" | cut -d: -f2)
+    local end=$(echo "$ref" | cut -d: -f3)
+
+    if [ -z "$end" ]; then
+        # Single line format (legacy): file:line
+        end="$start"
+    fi
+
+    sed -n "${start},${end}p" "$VAULT_DIR/$file"
+}
+
+# Get refs for an entity
+vref() {
+    local entity="$1"
+    if [ -z "$entity" ]; then
+        echo "Usage: vref <entity>"
+        return 1
+    fi
+
+    local index="$VAULT_DIR/_state/entities.json"
+    if [ ! -f "$index" ]; then
+        echo "Entity index not found: $index"
+        return 1
+    fi
+
+    # Search both projects and people
+    jq -r --arg e "$entity" '
+        (.projects[$e].refs // []) + (.people[$e].refs // []) | .[]
+    ' "$index" 2>/dev/null || echo "Entity not found: $entity"
+}
+
+# Get all context for an entity
+vcontext() {
+    local entity="$1"
+    if [ -z "$entity" ]; then
+        echo "Usage: vcontext <entity>"
+        return 1
+    fi
+
+    echo "=== Context for: $entity ==="
+    echo ""
+
+    for ref in $(vref "$entity"); do
+        echo "--- $ref ---"
+        vextract "$ref"
+        echo ""
+    done
+}
+
+# Search logs for a pattern
+vgrep() {
+    local pattern="$1"
+    if [ -z "$pattern" ]; then
+        echo "Usage: vgrep <pattern>"
+        return 1
+    fi
+
+    grep -n "$pattern" "$VAULT_DIR"/log/*.md 2>/dev/null
+}
+
+# List all entities
+ventities() {
+    local index="$VAULT_DIR/_state/entities.json"
+    if [ ! -f "$index" ]; then
+        echo "Entity index not found"
+        return 1
+    fi
+
+    echo "=== Projects ==="
+    jq -r '.projects | keys[]' "$index" 2>/dev/null
+    echo ""
+    echo "=== People ==="
+    jq -r '.people | keys[]' "$index" 2>/dev/null
+}
+
+# Quick log entry
+vquick() {
+    local thought="$*"
+    if [ -z "$thought" ]; then
+        echo "Usage: vquick <thought>"
+        return 1
+    fi
+
+    local week=$(date +%Y-W%V)
+    local logfile="$VAULT_DIR/log/$week.md"
+    local timestamp=$(date +"%Y-%m-%d %H:%M")
+
+    echo "" >> "$logfile"
+    echo "## $timestamp" >> "$logfile"
+    echo "" >> "$logfile"
+    echo "$thought" >> "$logfile"
+    echo "" >> "$logfile"
+    echo "---" >> "$logfile"
+
+    echo "[Logged to $week.md]"
+}
+
+# Vault status
+vstat() {
+    echo "Vault: $VAULT_DIR"
+    echo ""
+
+    local week=$(date +%Y-W%V)
+    if [ -f "$VAULT_DIR/log/$week.md" ]; then
+        local lines=$(wc -l < "$VAULT_DIR/log/$week.md")
+        echo "This week: $lines lines"
+    fi
+
+    if [ -f "$VAULT_DIR/_state/entities.json" ]; then
+        local projects=$(jq '.projects | length' "$VAULT_DIR/_state/entities.json")
+        local people=$(jq '.people | length' "$VAULT_DIR/_state/entities.json")
+        echo "Entities: $projects projects, $people people"
+    fi
+}
+
+echo "[vault helpers loaded: vextract, vref, vcontext, vgrep, ventities, vquick, vstat]"
