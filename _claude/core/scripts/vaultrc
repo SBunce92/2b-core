@@ -132,3 +132,4 @@ vstat() {
 }
 
 echo "[vault helpers loaded: vextract, vref, vcontext, vgrep, ventities, vquick, vstat]"
+# Version: 2025-12-22

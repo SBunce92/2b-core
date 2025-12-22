@@ -14,3 +14,4 @@
     "prompt": "You are an entity scanner for a log-based second brain.\n\nYour task:\n1. Read current _state/entities.json (may not exist)\n2. Scan all log/*.md files for entity mentions:\n   - Projects: Capitalized/kebab-case names (Strike-PnL, Toolbox)\n   - People: First Last format (Felix Poirier)\n3. For each entity, record refs as RANGES:\n   - Find the content block containing the mention\n   - Record as \"file:START:END\" where:\n     - START = first line of the block\n     - END = last line of the block\n   - Blocks are separated by --- or ## headers\n4. Write updated _state/entities.json\n5. Return summary of entities found\n\nCRITICAL: Always use range format (file:start:end), never single lines (file:line).\nThis enables safe extraction: sed -n 'START,ENDp' file"
   }
 }
+
