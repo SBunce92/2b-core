@@ -145,26 +145,35 @@ _export/
 .obsidian/
 EOF
 
-    # Create empty entities.json
-    cat > entities.json << 'EOF'
+    # Create empty documents.json
+    cat > documents.json << 'EOF'
 {
-  "projects": {},
-  "people": {},
   "_meta": {
-    "last_updated": null
+    "last_rebuilt": null,
+    "total_docs": 0
   }
 }
 EOF
 
-    # Create first weekly log
-    local week=$(date +%Y-W%V)
+    # Create empty entities.json (new schema)
+    cat > entities.json << 'EOF'
+{
+  "_meta": {
+    "last_rebuilt": null,
+    "total_entities": 0
+  }
+}
+EOF
+
+    # Create first daily log with setup document
     local today=$(date +%Y-%m-%d)
-    cat > "log/$week.md" << EOF
-# $week
+    local time=$(date +%H:%M)
+    cat > "log/$today.md" << EOF
+# $today
 
-## $today | Setup
+## $time | discussion | 2b-core
 
-Vault initialized with 2b-core.
+Vault initialized with 2b-core document system.
 
 ---
 EOF
